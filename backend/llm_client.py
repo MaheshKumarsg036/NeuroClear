@@ -16,6 +16,19 @@ from dotenv import load_dotenv
 load_dotenv(dotenv_path=Path(__file__).resolve().parent / ".env", override=False)
 
 
+# Define safety settings to block violence and NSFW content.
+SAFETY_SETTINGS = [
+    types.SafetySetting(
+        category="HARM_CATEGORY_DANGEROUS_CONTENT",
+        threshold="BLOCK_MEDIUM_AND_ABOVE",
+    ),
+    types.SafetySetting(
+        category="HARM_CATEGORY_SEXUALLY_EXPLICIT",
+        threshold="BLOCK_MEDIUM_AND_ABOVE",
+    ),
+]
+
+
 class GeminiLLMClient:
     """High-level helper for streaming completions from Gemini Flash."""
 
@@ -26,30 +39,25 @@ class GeminiLLMClient:
 
         self._client = genai.Client(api_key=self._api_key)
         self._model = model
+        self._config = types.GenerateContentConfig(safety_settings=SAFETY_SETTINGS)
 
     def stream_generate(self, prompt: str) -> Generator[str, None, None]:
         """Yield response chunks for a given prompt."""
-        contents = [
-            types.Content(
-                role="user",
-                parts=[types.Part.from_text(text=prompt)],
-            )
-        ]
-
-        config = types.GenerateContentConfig(
-            thinking_config=types.ThinkingConfig(thinking_budget=-1),
-            image_config=types.ImageConfig(image_size="1K"),
-        )
-
-        for chunk in self._client.models.generate_content_stream(
+        stream = self._client.models.generate_content_stream(
             model=self._model,
-            contents=contents,
-            config=config,
-        ):
-            text = getattr(chunk, "text", "") or ""
+            contents=prompt,
+            config=self._config,
+        )
+        for chunk in stream:
+            text = getattr(chunk, "text", None)
             if text:
                 yield text
 
     def generate(self, prompt: str) -> str:
         """Return the full response for the supplied prompt."""
-        return "".join(self.stream_generate(prompt))
+        response = self._client.models.generate_content(
+            model=self._model,
+            contents=prompt,
+            config=self._config,
+        )
+        return response.text or ""
