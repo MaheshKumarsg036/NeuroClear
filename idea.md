@@ -82,9 +82,9 @@ Useful for frontend rendering & clean UX.
 
 ---
 
-# 🏗️ **Architecture (Revised — MCP Removed)**
+# 🏗️ **Agentic Architecture (Google ADK)**
 
-NeuroClear uses a **clean, service-oriented architecture** built around Cloud Run, Gemini, ADK (Agent Development Kit), a managed document database, BigQuery, and Cloud Storage.
+NeuroClear now runs a **multi-agent architecture inspired by Google’s Agent Development Kit (ADK)**. Each accessibility mode is a dedicated agent with its own guardrails and prompt contract, coordinated by a router agent. This makes the system composable—new cognitive profiles can be added by registering another agent without touching the rest of the pipeline.
 
 ---
 
@@ -94,12 +94,12 @@ NeuroClear uses a **clean, service-oriented architecture** built around Cloud Ru
 Frontend (Web UI)
     → FastAPI API (Cloud Run)
       → Auth (OIDC / JWT Provider)
-      → ADK (Agent Development Kit)
-          → Prompt Orchestration
-          → Guardrails
-          → Mode-Specific Templates
-          → LLM (Gemini)
-          → Optional RAG (Embeddings + Vector Search)
+      → ADK Mesh Orchestrator
+          → Intake Agent (PDF/Text extraction)
+          → Router Agent (selects ADHD/Autism/... agent)
+          → Mode Agents (ADHD, Autism, Dyslexia, Anxiety, Elderly)
+              → Prompt Templates + Guardrails + Gemini Calls
+          → QA/Compliance Agent (JSON validation, safety filters)
         → Storage Layer
           → Document DB (MongoDB / Postgres) (artifacts)
           → Cloud Storage (pdf/audio)
@@ -131,16 +131,15 @@ Frontend (Web UI)
 
 ## **3. ADK — Agent Development Kit (Core Brain of the App)**
 
-ADK handles all AI logic:
+ADK now drives a **constellation of agents**:
 
-* Mode-specific prompt generation
-* Safety guardrails (no hallucinations, JSON-only output)
-* Call to Gemini for rewriting
-* Parsing of JSON results
-* Optional embedding-based retrieval
-* Optional vector search for context-aware rewriting
+* **Intake Agent** – extracts text from PDF / clipboard, normalizes encoding.
+* **Router Agent** – inspects the request and assigns the right support agent.
+* **Mode Agents (5 total)** – ADHD, Autism, Dyslexia, Anxiety, Elderly; each owns its ADK prompt graph, constraints, and Gemini call.
+* **Guardrail Agent** – enforces JSON schema, toxicity filters, and reruns if Gemini drifts.
+* **Summarizer Agent (optional)** – turns outputs into analytics records for BigQuery.
 
-ADK is the abstraction that makes adding new modes easy.
+Because each agent is self-contained, adding a “New Mode” only requires registering another ADK agent with its prompt template and guardrails.
 
 ---
 

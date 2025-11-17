@@ -12,8 +12,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from PyPDF2 import PdfReader
 
-from llm_client import GeminiLLMClient
-from prompts import SupportMode, build_prompt
+from adk_agents import AgentOrchestrator
+from prompts import SupportMode
 
 app = FastAPI(title="NeuroClear Backend", version="0.1.0")
 app.add_middleware(
@@ -23,7 +23,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-_llm_client = GeminiLLMClient()
+_orchestrator = AgentOrchestrator()
 
 
 @app.get("/health", response_class=JSONResponse)
@@ -103,15 +103,16 @@ async def transform_pdf(
 
     pdf_bytes = await pdf.read()
     document_text, pages = _extract_pdf_text(pdf_bytes)
-    prompt = build_prompt(mode, document_text)
-
-    raw_output = _llm_client.generate(prompt)
+    agent_artifact = _orchestrator.run(mode, document_text)
+    raw_output = agent_artifact.response
     result = _normalize_result(raw_output, document_text)
 
     return {
         "status": "ok",
         "mode": mode.value,
+        "agent": agent_artifact.mode.value,
         "pages": pages,
         "characters": len(document_text),
+        "prompt_tokens": len(agent_artifact.prompt.split()),
         "result": result,
     }

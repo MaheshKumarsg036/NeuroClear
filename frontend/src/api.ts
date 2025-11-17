@@ -7,8 +7,10 @@ export interface TransformResult {
 export interface TransformResponse {
   status: string;
   mode: string;
+  agent?: string;
   pages: number;
   characters: number;
+  prompt_tokens?: number;
   result: TransformResult;
 }
 
