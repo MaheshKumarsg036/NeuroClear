@@ -6,7 +6,7 @@
 
 ## Introduction
 
-Every day, millions of people struggle to process dense, complex, or ambiguous text due to cognitive differences. Individuals with ADHD need concise, action-oriented content. Autistic users require literal, unambiguous language. People with dyslexia benefit from simplified vocabulary and clean formatting. Those experiencing anxiety need calm, predictable phrasing. Elderly users require defined terms and simpler sentence structures.
+Every day, millions of people struggle to process dense, complex, or ambiguous text due to cognitive differences. Individuals with **ADHD** need concise, action-oriented content. **Autistic** users require literal, unambiguous language. People with **Dyslexia** benefit from simplified vocabulary and clean formatting. Those experiencing **Anxiety** need calm, predictable phrasing. **Elderly** users require defined terms and simpler sentence structures.
 
 Existing accessibility tools primarily focus on visual adjustments—fonts, spacing, or text-to-speech—but they don't **intelligently rewrite content** to match cognitive accessibility needs.
 
@@ -38,33 +38,33 @@ NeuroClear employs a **multi-agent architecture** inspired by Google's Agent Dev
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                      Frontend (React + Vite)                     │
-│              User uploads PDF → Selects mode → Views results     │
+│                      Frontend (React + Vite)                    │
+│              User uploads PDF → Selects mode → Views results    │
 └──────────────────────────┬──────────────────────────────────────┘
                            │
                            ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│                 FastAPI Backend (Cloud Run)                      │
+│                 FastAPI Backend (Cloud Run)                     │
 │  ┌───────────────────────────────────────────────────────────┐  │
 │  │            PDF Upload & Text Extraction                   │  │
 │  └─────────────────────────┬─────────────────────────────────┘  │
-│                            │                                     │
-│                            ▼                                     │
-│  ┌───────────────────────────────────────────────────────────┐  │
-│  │          ADK Agent Orchestrator (Router)                  │  │
-│  │  ┌─────────┬─────────┬──────────┬─────────┬───────────┐  │  │
-│  │  │  ADHD   │ Autism  │ Dyslexia │ Anxiety │  Elderly  │  │  │
-│  │  │  Agent  │  Agent  │  Agent   │  Agent  │   Agent   │  │  │
-│  │  └────┬────┴────┬────┴─────┬────┴────┬────┴─────┬─────┘  │  │
-│  └───────┼─────────┼──────────┼─────────┼──────────┼────────┘  │
-│          └─────────┴──────────┴─────────┴──────────┘           │
-│                            │                                     │
-│                            ▼                                     │
+│                            │                                    │
+│                            ▼                                    │
+│  ┌──────────────────────────────────────────────────────────┐   │
+│  │          ADK Agent Orchestrator (Router)                 │   │
+│  │  ┌─────────┬─────────┬──────────┬─────────┬───────────┐  │   │
+│  │  │  ADHD   │ Autism  │ Dyslexia │ Anxiety │  Elderly  │  │   │
+│  │  │  Agent  │  Agent  │  Agent   │  Agent  │   Agent   │  │   │
+│  │  └────┬────┴────┬────┴─────┬────┴────┬────┴─────┬─────┘  │   │
+│  └───────┼─────────┼──────────┼─────────┼──────────┼────────┘   │
+│          └─────────┴──────────┴─────────┴──────────┘            │
+│                            │                                    │
+│                            ▼                                    │
 │  ┌───────────────────────────────────────────────────────────┐  │
 │  │           Google Gemini LLM (JSON Output)                 │  │
 │  └─────────────────────────┬─────────────────────────────────┘  │
-│                            │                                     │
-│                            ▼                                     │
+│                            │                                    │
+│                            ▼                                    │
 │  ┌───────────────────────────────────────────────────────────┐  │
 │  │     Quiz Generation & Comprehension Validation            │  │
 │  └───────────────────────────────────────────────────────────┘  │
@@ -80,22 +80,22 @@ NeuroClear employs a **multi-agent architecture** inspired by Google's Agent Dev
 ### Design Rationale
 
 **Why Multi-Agent Architecture?**
-- **Modularity**: Each accessibility mode is self-contained—adding a new cognitive profile requires only registering a new agent
-- **Maintainability**: Prompt templates and guardrails are isolated per agent
-- **Scalability**: Agents can be independently optimized or replaced without affecting others
-- **Testability**: Each agent can be tested in isolation with mode-specific evaluation criteria
+- **Modularity**: Each accessibility mode is self-contained—adding a new cognitive profile requires only registering a new agent.
+- **Maintainability**: Prompt templates and guardrails are isolated per agent.
+- **Scalability**: Agents can be independently optimized or replaced without affecting others.
+- **Testability**: Each agent can be tested in isolation with mode-specific evaluation criteria.
 
 **Why Google Gemini?**
-- Native JSON output support reduces parsing errors
-- Strong instruction-following capabilities for complex rewriting tasks
-- Fast response times suitable for interactive applications
-- Cost-effective compared to competitive models
+- Native JSON output support reduces parsing errors.
+- Strong instruction-following capabilities for complex rewriting tasks.
+- Fast response times suitable for interactive applications.
+- Cost-effective compared to competitive models.
 
 **Why Cloud Run?**
-- Zero-configuration autoscaling based on request volume
-- Pay-per-use pricing ideal for variable workloads
-- Seamless integration with Google Cloud ecosystem
-- Built-in HTTPS and container orchestration
+- Zero-configuration autoscaling based on request volume.
+- Pay-per-use pricing ideal for variable workloads.
+- Seamless integration with Google Cloud ecosystem.
+- Built-in HTTPS and container orchestration.
 
 ---
 
@@ -123,9 +123,9 @@ Before starting, ensure you have:
 - **Gemini API Key**: Obtain from [Google AI Studio](https://aistudio.google.com/app/apikey)
 
 ### Prior Knowledge
-- Familiarity with REST APIs and asynchronous programming
-- Basic understanding of Docker containerization
-- Experience with React or similar frontend frameworks (helpful but not required)
+- Familiarity with REST APIs and asynchronous programming.
+- Basic understanding of Docker containerization.
+- Experience with React or similar frontend frameworks (helpful but not required).
 
 ---
 
@@ -694,6 +694,6 @@ For moderate usage (1000 transformations/month):
 
 ---
 
-*Built with ❤️ for the neurodivergent community by the NeuroClear team*
+**Built with ❤️ for the Neurodivergent Community by the NeuroClear Team**
 
-*Last updated: November 18, 2025*
+**Last updated: November 18, 2025**
