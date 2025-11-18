@@ -1,7 +1,12 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import "./App.css";
-import { transformPdf, type TransformResponse } from "./api";
+import {
+  transformPdf,
+  type QuizEvaluation,
+  type QuizQuestion,
+  type TransformResponse,
+} from "./api";
 
 const accessibilityModes = [
   { value: "adhd", label: "Focus Support (ADHD)" },
@@ -17,13 +22,35 @@ function App() {
   const [documentFile, setDocumentFile] = useState<File | null>(null);
   const [previewText, setPreviewText] = useState("Upload a PDF to preview the accessibility rewrite.");
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isSubmittingQuiz, setIsSubmittingQuiz] = useState(false);
   const [resultPayload, setResultPayload] = useState<TransformResponse | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [quizSessionId, setQuizSessionId] = useState<string | null>(null);
+  const [quizQuestions, setQuizQuestions] = useState<QuizQuestion[]>([]);
+  const [quizAnswers, setQuizAnswers] = useState<Record<string, number | null>>({});
+  const [quizEvaluation, setQuizEvaluation] = useState<QuizEvaluation | null>(null);
+  const [celebrate, setCelebrate] = useState(false);
 
   const modeLabel = useMemo(
     () => accessibilityModes.find((mode) => mode.value === selectedMode)?.label ?? "",
     [selectedMode]
   );
+
+  useEffect(() => {
+    if (!celebrate) {
+      return;
+    }
+    const timer = window.setTimeout(() => setCelebrate(false), 4500);
+    return () => window.clearTimeout(timer);
+  }, [celebrate]);
+
+  const resetQuizState = () => {
+    setQuizSessionId(null);
+    setQuizQuestions([]);
+    setQuizAnswers({});
+    setQuizEvaluation(null);
+    setCelebrate(false);
+  };
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0] ?? null;
@@ -40,6 +67,7 @@ function App() {
     setUploadedFileName(file ? file.name : null);
     setResultPayload(null);
     setPreviewText("Upload a PDF to preview the accessibility rewrite.");
+    resetQuizState();
   };
 
   const handleGeneratePreview = async () => {
@@ -50,17 +78,76 @@ function App() {
 
     setIsGenerating(true);
     setErrorMessage(null);
+    resetQuizState();
 
     try {
-      const response = await transformPdf(selectedMode, documentFile);
+      const response = await transformPdf({ mode: selectedMode, file: documentFile });
       setResultPayload(response);
       setPreviewText(response.result?.rewrite ?? "");
+      setQuizSessionId(response.quiz_session_id ?? null);
+      const questions = response.quiz?.questions ?? [];
+      setQuizQuestions(questions);
+      const initialAnswers = questions.reduce<Record<string, number | null>>((acc, question) => {
+        acc[question.id] = null;
+        return acc;
+      }, {});
+      setQuizAnswers(initialAnswers);
+      setQuizEvaluation(response.quiz_evaluation ?? null);
+      setCelebrate(response.celebration_effect === "party_popper_and_balloons");
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unexpected error. Please try again.";
       setErrorMessage(message);
       setResultPayload(null);
+      resetQuizState();
     } finally {
       setIsGenerating(false);
+    }
+  };
+
+  const handleAnswerChange = (questionId: string, optionIndex: number) => {
+    setQuizAnswers((prev) => ({ ...prev, [questionId]: optionIndex }));
+  };
+
+  const handleSubmitQuiz = async () => {
+    if (!quizSessionId) {
+      setErrorMessage("Quiz session not found. Regenerate the rewrite to try again.");
+      return;
+    }
+
+    const answered = Object.entries(quizAnswers).reduce<Record<string, number>>((acc, [key, value]) => {
+      if (value !== null && value !== undefined) {
+        acc[key] = value;
+      }
+      return acc;
+    }, {});
+
+    if (Object.keys(answered).length === 0) {
+      setErrorMessage("Please answer at least one question before submitting.");
+      return;
+    }
+
+    setErrorMessage(null);
+    setIsSubmittingQuiz(true);
+
+    try {
+      const response = await transformPdf({
+        mode: selectedMode,
+        quizSessionId,
+        answers: answered,
+      });
+
+      setResultPayload(response);
+      setQuizEvaluation(response.quiz_evaluation ?? null);
+      setCelebrate(response.celebration_effect === "party_popper_and_balloons");
+
+      const questions = response.quiz?.questions ?? quizQuestions;
+      setQuizQuestions(questions);
+      setQuizSessionId(response.quiz_session_id ?? quizSessionId);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unable to submit quiz answers.";
+      setErrorMessage(message);
+    } finally {
+      setIsSubmittingQuiz(false);
     }
   };
 
@@ -151,7 +238,91 @@ function App() {
             <p className="helper-text">Select a PDF and mode, then run the preview to see the Gemini rewrite.</p>
           )}
         </section>
+
+        {quizQuestions.length > 0 && (
+          <section className="panel quiz-panel">
+            <header>
+              <h2>Knowledge Check</h2>
+              <p className="lead">Answer a few quick questions to reinforce the rewritten content.</p>
+            </header>
+
+            <div className="quiz-list">
+              {quizQuestions.map((question, index) => {
+                const selected = quizAnswers[question.id];
+                const breakdown = quizEvaluation?.breakdown.find((item) => item.question_id === question.id);
+                const isCorrect = breakdown?.is_correct;
+                const statusClass = breakdown ? (isCorrect ? "correct" : "incorrect") : "";
+
+                return (
+                  <article key={question.id} className={`quiz-card ${statusClass}`}>
+                    <div className="quiz-card-header">
+                      <span className="quiz-step">Q{index + 1}</span>
+                      {breakdown && (
+                        <span className={`quiz-status ${statusClass}`}>
+                          {isCorrect ? "Correct" : "Try Again"}
+                        </span>
+                      )}
+                    </div>
+                    <p className="quiz-question">{question.question}</p>
+                    <div className="quiz-options">
+                      {question.options.map((option, optionIndex) => {
+                        const inputId = `${question.id}-${optionIndex}`;
+                        return (
+                          <label key={inputId} htmlFor={inputId} className="quiz-option">
+                            <input
+                              id={inputId}
+                              type="radio"
+                              name={question.id}
+                              value={optionIndex}
+                              checked={selected === optionIndex}
+                              onChange={() => handleAnswerChange(question.id, optionIndex)}
+                              disabled={isSubmittingQuiz}
+                            />
+                            <span>{option}</span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                    {breakdown && !isCorrect && (
+                      <p className="quiz-feedback">{question.explanation || "Review the rewrite above and try again."}</p>
+                    )}
+                  </article>
+                );
+              })}
+            </div>
+
+            <div className="quiz-actions">
+              <button
+                className="primary secondary"
+                type="button"
+                onClick={handleSubmitQuiz}
+                disabled={isSubmittingQuiz}
+              >
+                {isSubmittingQuiz ? "Checking Answers…" : "Submit Quiz Answers"}
+              </button>
+              {quizEvaluation && (
+                <div className="quiz-summary">
+                  <p>
+                    You answered {quizEvaluation.correct_answers} of {quizEvaluation.total_questions} correctly.
+                  </p>
+                </div>
+              )}
+            </div>
+          </section>
+        )}
       </main>
+
+      {celebrate && (
+        <div className="celebration-overlay" aria-live="polite">
+          <div className="confetti">🎉</div>
+          <div className="balloons">
+            <span className="balloon" />
+            <span className="balloon" />
+            <span className="balloon" />
+          </div>
+          <p>Perfect score! Great job!</p>
+        </div>
+      )}
     </div>
   );
 }
